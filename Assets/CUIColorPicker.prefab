@@ -51,6 +51,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67fe8cf2682634429a82e70367b1350, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  saturationValue: {fileID: 154786}
+  saturationValueKnob: {fileID: 154792}
+  hue: {fileID: 154788}
+  hueKnob: {fileID: 154794}
+  result: {fileID: 154790}
+  color: {r: 1, g: 1, b: 1, a: 1}
+  onValueChange:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &154786
 GameObject:
   m_ObjectHideFlags: 0

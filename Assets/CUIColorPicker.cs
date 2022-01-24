@@ -1,41 +1,87 @@
 using System;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class CUIColorPicker : MonoBehaviour
 {
-    public Color Color { get { return _color; } set { Setup(value); } }
-    public void SetOnValueChangeCallback(Action<Color> onValueChange)
-    {
-        _onValueChange = onValueChange;
-    }
-    private Color _color = Color.red;
-    private Action<Color> _onValueChange;
-    private Action _update;
+    [SerializeField]
+    private GameObject saturationValue;
+    [SerializeField]
+    private GameObject saturationValueKnob;
+    [SerializeField]
+    private GameObject hue;
+    [SerializeField]
+    private GameObject hueKnob;
+    [SerializeField]
+    private GameObject result;
+    [SerializeField]
+    private Color color = Color.white;
 
-    private static void RGBToHSV(Color color, out float h, out float s, out float v)
+    [Space]
+    public UnityEvent<Color> onValueChange;
+
+    private Action update;
+    private Color[] hueColors;
+    private Color[] satvalColors;
+    private Texture2D hueTexture;
+
+    public Color Color
     {
-        var cmin = Mathf.Min(color.r, color.g, color.b);
-        var cmax = Mathf.Max(color.r, color.g, color.b);
-        var d = cmax - cmin;
-        if (d == 0)
+        get
         {
-            h = 0;
+            return color;
         }
-        else if (cmax == color.r)
+
+        set
         {
-            h = Mathf.Repeat((color.g - color.b) / d, 6);
+            Setup(value);
         }
-        else if (cmax == color.g)
-        {
-            h = (color.b - color.r) / d + 2;
-        }
-        else
-        {
-            h = (color.r - color.g) / d + 4;
-        }
-        s = cmax == 0 ? 0 : d / cmax;
-        v = cmax;
+    }
+
+    private void Awake()
+    {
+        if (saturationValue == null)
+            throw new Exception("The saturationValue can't be null");
+
+        if (saturationValueKnob == null)
+            throw new Exception("The saturationValueKnob can't be null");
+
+        if (hue == null)
+            throw new Exception("The hue can't be null");
+
+        if (hueKnob == null)
+            throw new Exception("The hueKnob can't be null");
+
+        if (result == null)
+            throw new Exception("The result can't be null");
+
+        hueColors = new Color[] {
+            Color.red,
+            Color.yellow,
+            Color.green,
+            Color.cyan,
+            Color.blue,
+            Color.magenta,
+        };
+
+        satvalColors = new Color[] {
+            new Color( 0, 0, 0 ),
+            new Color( 0, 0, 0 ),
+            new Color( 1, 1, 1 ),
+            hueColors[0],
+        };
+
+        hueTexture = new Texture2D(1, 7);
+        for (int i = 0; i < 7; i++)
+            hueTexture.SetPixel(0, i, hueColors[i % 6]);
+        hueTexture.Apply();
+    }
+
+    private void Update()
+    {
+        if(gameObject.activeSelf)
+            update();
     }
 
     private static bool GetLocalMouse(GameObject go, out Vector2 result)
@@ -47,48 +93,12 @@ public class CUIColorPicker : MonoBehaviour
         return rt.rect.Contains(mp);
     }
 
-    private static Vector2 GetWidgetSize(GameObject go)
-    {
-        var rt = (RectTransform)go.transform;
-        return rt.rect.size;
-    }
-
-    private GameObject GO(string name)
-    {
-        return transform.Find(name).gameObject;
-    }
-
     private void Setup(Color inputColor)
     {
-        var satvalGO = GO("SaturationValue");
-        var satvalKnob = GO("SaturationValue/Knob");
-        var hueGO = GO("Hue");
-        var hueKnob = GO("Hue/Knob");
-        var result = GO("Result");
-        var hueColors = new Color[] {
-            Color.red,
-            Color.yellow,
-            Color.green,
-            Color.cyan,
-            Color.blue,
-            Color.magenta,
-        };
-        var satvalColors = new Color[] {
-            new Color( 0, 0, 0 ),
-            new Color( 0, 0, 0 ),
-            new Color( 1, 1, 1 ),
-            hueColors[0],
-        };
-        var hueTex = new Texture2D(1, 7);
-        for (int i = 0; i < 7; i++)
-        {
-            hueTex.SetPixel(0, i, hueColors[i % 6]);
-        }
-        hueTex.Apply();
-        hueGO.GetComponent<Image>().sprite = Sprite.Create(hueTex, new Rect(0, 0.5f, 1, 6), new Vector2(0.5f, 0.5f));
-        var hueSz = GetWidgetSize(hueGO);
+        hue.GetComponent<Image>().sprite = Sprite.Create(hueTexture, new Rect(0, 0.5f, 1, 6), new Vector2(0.5f, 0.5f));
+        var hueSz = ((RectTransform)hue.transform).rect.size;
         var satvalTex = new Texture2D(2, 2);
-        satvalGO.GetComponent<Image>().sprite = Sprite.Create(satvalTex, new Rect(0.5f, 0.5f, 1, 1), new Vector2(0.5f, 0.5f));
+        saturationValue.GetComponent<Image>().sprite = Sprite.Create(satvalTex, new Rect(0.5f, 0.5f, 1, 1), new Vector2(0.5f, 0.5f));
         Action resetSatValTexture = () =>
         {
             for (int j = 0; j < 2; j++)
@@ -100,9 +110,9 @@ public class CUIColorPicker : MonoBehaviour
             }
             satvalTex.Apply();
         };
-        var satvalSz = GetWidgetSize(satvalGO);
+        var saturationValueSize = ((RectTransform)saturationValue.transform).rect.size;
         float Hue, Saturation, Value;
-        RGBToHSV(inputColor, out Hue, out Saturation, out Value);
+        Color.RGBToHSV(inputColor, out Hue, out Saturation, out Value);
         Action applyHue = () =>
         {
             var i0 = Mathf.Clamp((int)Hue, 0, 5);
@@ -122,19 +132,17 @@ public class CUIColorPicker : MonoBehaviour
             var resultColor = c0 + c1 + c2 + c3;
             var resImg = result.GetComponent<Image>();
             resImg.color = resultColor;
-            if (_color != resultColor)
+            if (color != resultColor)
             {
-                if (_onValueChange != null)
-                {
-                    _onValueChange(resultColor);
-                }
-                _color = resultColor;
+                onValueChange?.Invoke(resultColor);
+                color = resultColor;
             }
         };
         applyHue();
         applySaturationValue();
-        satvalKnob.transform.localPosition = new Vector2(Saturation * satvalSz.x, Value * satvalSz.y);
-        hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, Hue / 6 * satvalSz.y);
+        saturationValueKnob.transform.localPosition = new Vector2(Saturation * saturationValueSize.x, Value * saturationValueSize.y);
+        hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, Hue / 6 * saturationValueSize.y);
+        
         Action dragH = null;
         Action dragSV = null;
         Action idle = () =>
@@ -142,43 +150,44 @@ public class CUIColorPicker : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 Vector2 mp;
-                if (GetLocalMouse(hueGO, out mp))
+                if (GetLocalMouse(hue, out mp))
                 {
-                    _update = dragH;
+                    update = dragH;
                 }
-                else if (GetLocalMouse(satvalGO, out mp))
+                else if (GetLocalMouse(saturationValue, out mp))
                 {
-                    _update = dragSV;
+                    update = dragSV;
                 }
             }
         };
+
         dragH = () =>
         {
             Vector2 mp;
-            GetLocalMouse(hueGO, out mp);
+            GetLocalMouse(hue, out mp);
             Hue = mp.y / hueSz.y * 6;
             applyHue();
             applySaturationValue();
             hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, mp.y);
             if (Input.GetMouseButtonUp(0))
             {
-                _update = idle;
+                update = idle;
             }
         };
         dragSV = () =>
         {
             Vector2 mp;
-            GetLocalMouse(satvalGO, out mp);
-            Saturation = mp.x / satvalSz.x;
-            Value = mp.y / satvalSz.y;
+            GetLocalMouse(saturationValue, out mp);
+            Saturation = mp.x / saturationValueSize.x;
+            Value = mp.y / saturationValueSize.y;
             applySaturationValue();
-            satvalKnob.transform.localPosition = mp;
+            saturationValueKnob.transform.localPosition = mp;
             if (Input.GetMouseButtonUp(0))
             {
-                _update = idle;
+                update = idle;
             }
         };
-        _update = idle;
+        update = idle;
     }
 
     public void SetRandomColor()
@@ -188,15 +197,5 @@ public class CUIColorPicker : MonoBehaviour
         var g = (rng.Next() % 1000) / 1000.0f;
         var b = (rng.Next() % 1000) / 1000.0f;
         Color = new Color(r, g, b);
-    }
-
-    void Awake()
-    {
-        Color = Color.red;
-    }
-
-    void Update()
-    {
-        _update();
     }
 }
