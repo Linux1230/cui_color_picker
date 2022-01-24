@@ -19,7 +19,7 @@ public class CUIColorPicker : MonoBehaviour
     private Color color = Color.white;
 
     [Space]
-    public UnityEvent<Color> onValueChange;
+    public UnityEvent<Color> onValueChanged;
 
     private Action update;
     private Color[] hueColors;
@@ -148,7 +148,7 @@ public class CUIColorPicker : MonoBehaviour
         update = idle;
     }
 
-    void ResetSaturationValueTexture()
+    private void ResetSaturationValueTexture()
     {
         for (int j = 0; j < 2; j++)
             for (int i = 0; i < 2; i++)
@@ -156,18 +156,18 @@ public class CUIColorPicker : MonoBehaviour
         saturationValueTexture.Apply();
     }
 
-    private void ApplyHue(float Hue)
+    private void ApplyHue(float colorHue)
     {
-        int i0 = Mathf.Clamp((int)Hue, 0, 5);
+        int i0 = Mathf.Clamp((int)colorHue, 0, 5);
         int i1 = (i0 + 1) % 6;
-        Color resultColor = Color.Lerp(hueColors[i0], hueColors[i1], Hue - i0);
+        Color resultColor = Color.Lerp(hueColors[i0], hueColors[i1], colorHue - i0);
         saturationValueColors[3] = resultColor;
         ResetSaturationValueTexture();
     }
 
-    void ApplySaturationValue(float Saturation, float Value)
+    private void ApplySaturationValue(float colorSaturation, float colorValue)
     {
-        Vector2 sv = new Vector2(Saturation, Value);
+        Vector2 sv = new Vector2(colorSaturation, colorValue);
         Vector2 isv = new Vector2(1 - sv.x, 1 - sv.y);
         Color c0 = isv.x * isv.y * saturationValueColors[0];
         Color c1 = sv.x * isv.y * saturationValueColors[1];
@@ -178,7 +178,7 @@ public class CUIColorPicker : MonoBehaviour
         resultImage.color = resultColor;
         if (color != resultColor)
         {
-            onValueChange?.Invoke(resultColor);
+            onValueChanged?.Invoke(resultColor);
             color = resultColor;
         }
     }
