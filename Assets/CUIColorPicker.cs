@@ -98,52 +98,13 @@ public class CUIColorPicker : MonoBehaviour
 
     private void Start()
     {
-        Action resetSaturationValueTexture = () =>
-        {
-            for (int j = 0; j < 2; j++)
-            {
-                for (int i = 0; i < 2; i++)
-                {
-                    saturationValueTexture.SetPixel(i, j, saturationValueColors[i + j * 2]);
-                }
-            }
-            saturationValueTexture.Apply();
-        };
+        Color.RGBToHSV(color, out float colorHue, out float colorSaturation, out float colorValue);
 
-        Color.RGBToHSV(color, out float Hue, out float Saturation, out float Value);
+        ApplyHue(colorHue);
+        ApplySaturationValue(colorSaturation, colorValue);
 
-        Action applyHue = () =>
-        {
-            int i0 = Mathf.Clamp((int)Hue, 0, 5);
-            int i1 = (i0 + 1) % 6;
-            Color resultColor = Color.Lerp(hueColors[i0], hueColors[i1], Hue - i0);
-            saturationValueColors[3] = resultColor;
-            resetSaturationValueTexture();
-        };
-
-        Action applySaturationValue = () =>
-        {
-            Vector2 sv = new Vector2(Saturation, Value);
-            Vector2 isv = new Vector2(1 - sv.x, 1 - sv.y);
-            Color c0 = isv.x * isv.y * saturationValueColors[0];
-            Color c1 = sv.x * isv.y * saturationValueColors[1];
-            Color c2 = isv.x * sv.y * saturationValueColors[2];
-            Color c3 = sv.x * sv.y * saturationValueColors[3];
-            Color resultColor = c0 + c1 + c2 + c3;
-            Image resultImage = result.GetComponent<Image>();
-            resultImage.color = resultColor;
-            if (color != resultColor)
-            {
-                onValueChange?.Invoke(resultColor);
-                color = resultColor;
-            }
-        };
-
-        applyHue();
-        applySaturationValue();
-
-        saturationValueKnob.transform.localPosition = new Vector2(Saturation * saturationValueSize.x, Value * saturationValueSize.y);
-        hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, Hue / 6 * saturationValueSize.y);
+        saturationValueKnob.transform.localPosition = new Vector2(colorSaturation * saturationValueSize.x, colorValue * saturationValueSize.y);
+        hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, colorHue / 6 * saturationValueSize.y);
 
         Action dragH = null;
         Action dragSV = null;
@@ -152,8 +113,7 @@ public class CUIColorPicker : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-                Vector2 mp;
-                if (GetLocalMouse(hue, out mp))
+                if (GetLocalMouse(hue, out Vector2 mp))
                     update = dragH;
                 else if (GetLocalMouse(saturationValue, out mp))
                     update = dragSV;
@@ -162,11 +122,10 @@ public class CUIColorPicker : MonoBehaviour
 
         dragH = () =>
         {
-            Vector2 mp;
-            GetLocalMouse(hue, out mp);
-            Hue = mp.y / hueSize.y * 6;
-            applyHue();
-            applySaturationValue();
+            GetLocalMouse(hue, out Vector2 mp);
+            colorHue = mp.y / hueSize.y * 6;
+            ApplyHue(colorHue);
+            ApplySaturationValue(colorSaturation, colorValue);
             hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, mp.y);
             if (Input.GetMouseButtonUp(0))
             {
@@ -176,11 +135,10 @@ public class CUIColorPicker : MonoBehaviour
 
         dragSV = () =>
         {
-            Vector2 mp;
-            GetLocalMouse(saturationValue, out mp);
-            Saturation = mp.x / saturationValueSize.x;
-            Value = mp.y / saturationValueSize.y;
-            applySaturationValue();
+            GetLocalMouse(saturationValue, out Vector2 mp);
+            colorSaturation = mp.x / saturationValueSize.x;
+            colorValue = mp.y / saturationValueSize.y;
+            ApplySaturationValue(colorSaturation, colorValue);
             saturationValueKnob.transform.localPosition = mp;
             if (Input.GetMouseButtonUp(0))
             {
@@ -189,6 +147,41 @@ public class CUIColorPicker : MonoBehaviour
         };
 
         update = idle;
+    }
+
+    void ResetSaturationValueTexture()
+    {
+        for (int j = 0; j < 2; j++)
+            for (int i = 0; i < 2; i++)
+                saturationValueTexture.SetPixel(i, j, saturationValueColors[i + j * 2]);
+        saturationValueTexture.Apply();
+    }
+
+    private void ApplyHue(float Hue)
+    {
+        int i0 = Mathf.Clamp((int)Hue, 0, 5);
+        int i1 = (i0 + 1) % 6;
+        Color resultColor = Color.Lerp(hueColors[i0], hueColors[i1], Hue - i0);
+        saturationValueColors[3] = resultColor;
+        ResetSaturationValueTexture();
+    }
+
+    void ApplySaturationValue(float Saturation, float Value)
+    {
+        Vector2 sv = new Vector2(Saturation, Value);
+        Vector2 isv = new Vector2(1 - sv.x, 1 - sv.y);
+        Color c0 = isv.x * isv.y * saturationValueColors[0];
+        Color c1 = sv.x * isv.y * saturationValueColors[1];
+        Color c2 = isv.x * sv.y * saturationValueColors[2];
+        Color c3 = sv.x * sv.y * saturationValueColors[3];
+        Color resultColor = c0 + c1 + c2 + c3;
+        Image resultImage = result.GetComponent<Image>();
+        resultImage.color = resultColor;
+        if (color != resultColor)
+        {
+            onValueChange?.Invoke(resultColor);
+            color = resultColor;
+        }
     }
 
     private static bool GetLocalMouse(GameObject go, out Vector2 result)
