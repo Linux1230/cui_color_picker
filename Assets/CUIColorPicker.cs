@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using Random = System.Random;
 
 public class CUIColorPicker : MonoBehaviour
 {
@@ -23,8 +24,11 @@ public class CUIColorPicker : MonoBehaviour
 
     private Action update;
     private Color[] hueColors;
-    private Color[] satvalColors;
-    private Texture2D hueTexture;
+    private Color[] saturationValueColors;
+    private Texture2D hueTexture;  
+    private Texture2D saturationValueTexture;
+    private Vector2 hueSize;
+    private Vector2 saturationValueSize;
 
     public Color Color
     {
@@ -35,7 +39,7 @@ public class CUIColorPicker : MonoBehaviour
 
         set
         {
-            Setup(value);
+            color = value;
         }
     }
 
@@ -65,7 +69,7 @@ public class CUIColorPicker : MonoBehaviour
             Color.magenta,
         };
 
-        satvalColors = new Color[] {
+        saturationValueColors = new Color[] {
             new Color( 0, 0, 0 ),
             new Color( 0, 0, 0 ),
             new Color( 1, 1, 1 ),
@@ -76,88 +80,83 @@ public class CUIColorPicker : MonoBehaviour
         for (int i = 0; i < 7; i++)
             hueTexture.SetPixel(0, i, hueColors[i % 6]);
         hueTexture.Apply();
+
+        saturationValueTexture = new Texture2D(2, 2);
+
+        hue.GetComponent<Image>().sprite = Sprite.Create(hueTexture, new Rect(0, 0.5f, 1, 6), new Vector2(0.5f, 0.5f));
+        hueSize = ((RectTransform)hue.transform).rect.size;
+
+        saturationValue.GetComponent<Image>().sprite = Sprite.Create(saturationValueTexture, new Rect(0.5f, 0.5f, 1, 1), new Vector2(0.5f, 0.5f));
+        saturationValueSize = ((RectTransform)saturationValue.transform).rect.size;
     }
 
     private void Update()
     {
-        if(gameObject.activeSelf)
+        if (gameObject.activeSelf)
             update();
     }
 
-    private static bool GetLocalMouse(GameObject go, out Vector2 result)
+    private void Start()
     {
-        var rt = (RectTransform)go.transform;
-        var mp = rt.InverseTransformPoint(Input.mousePosition);
-        result.x = Mathf.Clamp(mp.x, rt.rect.min.x, rt.rect.max.x);
-        result.y = Mathf.Clamp(mp.y, rt.rect.min.y, rt.rect.max.y);
-        return rt.rect.Contains(mp);
-    }
-
-    private void Setup(Color inputColor)
-    {
-        hue.GetComponent<Image>().sprite = Sprite.Create(hueTexture, new Rect(0, 0.5f, 1, 6), new Vector2(0.5f, 0.5f));
-        var hueSz = ((RectTransform)hue.transform).rect.size;
-        var satvalTex = new Texture2D(2, 2);
-        saturationValue.GetComponent<Image>().sprite = Sprite.Create(satvalTex, new Rect(0.5f, 0.5f, 1, 1), new Vector2(0.5f, 0.5f));
-        Action resetSatValTexture = () =>
+        Action resetSaturationValueTexture = () =>
         {
             for (int j = 0; j < 2; j++)
             {
                 for (int i = 0; i < 2; i++)
                 {
-                    satvalTex.SetPixel(i, j, satvalColors[i + j * 2]);
+                    saturationValueTexture.SetPixel(i, j, saturationValueColors[i + j * 2]);
                 }
             }
-            satvalTex.Apply();
+            saturationValueTexture.Apply();
         };
-        var saturationValueSize = ((RectTransform)saturationValue.transform).rect.size;
-        float Hue, Saturation, Value;
-        Color.RGBToHSV(inputColor, out Hue, out Saturation, out Value);
+
+        Color.RGBToHSV(color, out float Hue, out float Saturation, out float Value);
+
         Action applyHue = () =>
         {
-            var i0 = Mathf.Clamp((int)Hue, 0, 5);
-            var i1 = (i0 + 1) % 6;
-            var resultColor = Color.Lerp(hueColors[i0], hueColors[i1], Hue - i0);
-            satvalColors[3] = resultColor;
-            resetSatValTexture();
+            int i0 = Mathf.Clamp((int)Hue, 0, 5);
+            int i1 = (i0 + 1) % 6;
+            Color resultColor = Color.Lerp(hueColors[i0], hueColors[i1], Hue - i0);
+            saturationValueColors[3] = resultColor;
+            resetSaturationValueTexture();
         };
+
         Action applySaturationValue = () =>
         {
-            var sv = new Vector2(Saturation, Value);
-            var isv = new Vector2(1 - sv.x, 1 - sv.y);
-            var c0 = isv.x * isv.y * satvalColors[0];
-            var c1 = sv.x * isv.y * satvalColors[1];
-            var c2 = isv.x * sv.y * satvalColors[2];
-            var c3 = sv.x * sv.y * satvalColors[3];
-            var resultColor = c0 + c1 + c2 + c3;
-            var resImg = result.GetComponent<Image>();
-            resImg.color = resultColor;
+            Vector2 sv = new Vector2(Saturation, Value);
+            Vector2 isv = new Vector2(1 - sv.x, 1 - sv.y);
+            Color c0 = isv.x * isv.y * saturationValueColors[0];
+            Color c1 = sv.x * isv.y * saturationValueColors[1];
+            Color c2 = isv.x * sv.y * saturationValueColors[2];
+            Color c3 = sv.x * sv.y * saturationValueColors[3];
+            Color resultColor = c0 + c1 + c2 + c3;
+            Image resultImage = result.GetComponent<Image>();
+            resultImage.color = resultColor;
             if (color != resultColor)
             {
                 onValueChange?.Invoke(resultColor);
                 color = resultColor;
             }
         };
+
         applyHue();
         applySaturationValue();
+
         saturationValueKnob.transform.localPosition = new Vector2(Saturation * saturationValueSize.x, Value * saturationValueSize.y);
         hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, Hue / 6 * saturationValueSize.y);
-        
+
         Action dragH = null;
         Action dragSV = null;
+
         Action idle = () =>
         {
             if (Input.GetMouseButtonDown(0))
             {
                 Vector2 mp;
                 if (GetLocalMouse(hue, out mp))
-                {
                     update = dragH;
-                }
                 else if (GetLocalMouse(saturationValue, out mp))
-                {
                     update = dragSV;
-                }
             }
         };
 
@@ -165,7 +164,7 @@ public class CUIColorPicker : MonoBehaviour
         {
             Vector2 mp;
             GetLocalMouse(hue, out mp);
-            Hue = mp.y / hueSz.y * 6;
+            Hue = mp.y / hueSize.y * 6;
             applyHue();
             applySaturationValue();
             hueKnob.transform.localPosition = new Vector2(hueKnob.transform.localPosition.x, mp.y);
@@ -174,6 +173,7 @@ public class CUIColorPicker : MonoBehaviour
                 update = idle;
             }
         };
+
         dragSV = () =>
         {
             Vector2 mp;
@@ -187,15 +187,25 @@ public class CUIColorPicker : MonoBehaviour
                 update = idle;
             }
         };
+
         update = idle;
+    }
+
+    private static bool GetLocalMouse(GameObject go, out Vector2 result)
+    {
+        var rt = (RectTransform)go.transform;
+        var mp = rt.InverseTransformPoint(Input.mousePosition);
+        result.x = Mathf.Clamp(mp.x, rt.rect.min.x, rt.rect.max.x);
+        result.y = Mathf.Clamp(mp.y, rt.rect.min.y, rt.rect.max.y);
+        return rt.rect.Contains(mp);
     }
 
     public void SetRandomColor()
     {
-        var rng = new System.Random();
-        var r = (rng.Next() % 1000) / 1000.0f;
-        var g = (rng.Next() % 1000) / 1000.0f;
-        var b = (rng.Next() % 1000) / 1000.0f;
+        Random random = new Random();
+        float r = (random.Next() % 1000) / 1000.0f;
+        float g = (random.Next() % 1000) / 1000.0f;
+        float b = (random.Next() % 1000) / 1000.0f;
         Color = new Color(r, g, b);
     }
 }
