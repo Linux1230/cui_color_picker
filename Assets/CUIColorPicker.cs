@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using Random = System.Random;
 
 public class CUIColorPicker : MonoBehaviour
 {
@@ -191,14 +190,5 @@ public class CUIColorPicker : MonoBehaviour
         result.x = Mathf.Clamp(mp.x, rt.rect.min.x, rt.rect.max.x);
         result.y = Mathf.Clamp(mp.y, rt.rect.min.y, rt.rect.max.y);
         return rt.rect.Contains(mp);
-    }
-
-    public void SetRandomColor()
-    {
-        Random random = new Random();
-        float r = (random.Next() % 1000) / 1000.0f;
-        float g = (random.Next() % 1000) / 1000.0f;
-        float b = (random.Next() % 1000) / 1000.0f;
-        Color = new Color(r, g, b);
     }
 }
