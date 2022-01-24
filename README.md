@@ -7,7 +7,8 @@ Usage
 ======
 
 Add your own function to the onValueChanged unity event trough the editor inspector.
+![image](https://user-images.githubusercontent.com/25261683/150862871-e796fcfa-315a-46dc-b1ef-cb469f5e25de.png)
 
 Forked from
 ======
-See the original version [here](https://github.com/SnapshotGames/cui_color_picker)
+See the original repository [here](https://github.com/SnapshotGames/cui_color_picker)
