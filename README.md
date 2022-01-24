@@ -11,4 +11,4 @@ Add your own function to the onValueChanged unity event trough the editor inspec
 
 Forked from
 ======
-See the original version [here](https://github.com/SnapshotGames/cui_color_picker)
+See the original repository [here](https://github.com/SnapshotGames/cui_color_picker)
