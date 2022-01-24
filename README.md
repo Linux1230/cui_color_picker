@@ -7,6 +7,7 @@ Usage
 ======
 
 Add your own function to the onValueChanged unity event trough the editor inspector.
+![image](https://user-images.githubusercontent.com/25261683/150862700-072f2515-96dd-4b30-82e4-9c16dc244d46.png)
 
 Forked from
 ======
