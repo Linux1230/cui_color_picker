@@ -32,7 +32,6 @@ public class CUIColorPicker : MonoBehaviour
     private Vector2 hueSize;
     private Vector2 saturationValueSize;
     private Touch touch;
-    private bool touchOnUI;
 
     private enum InputMethod {Mouse, Touch}
 
@@ -204,12 +203,7 @@ public class CUIColorPicker : MonoBehaviour
                 {
                     touch = Input.GetTouch(0);
 
-                    touchOnUI = (!touchOnUI && touch.phase != TouchPhase.Ended);
-
-                    if (EventSystem.current.IsPointerOverGameObject(touch.fingerId))
-                        touchOnUI = true;
-
-                    if (touchOnUI && touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
+                    if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
                         inputPoint = rt.InverseTransformPoint(touch.position);
                 }
                 break;
@@ -232,9 +226,7 @@ public class CUIColorPicker : MonoBehaviour
                 {
                     touch = Input.GetTouch(0);
 
-                    touchOnUI = (!touchOnUI && touch.phase != TouchPhase.Ended);
-
-                    if (!touchOnUI && (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled))
+                    if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
                         return true;
                 }
                 return false;
@@ -254,9 +246,7 @@ public class CUIColorPicker : MonoBehaviour
                 {
                     touch = Input.GetTouch(0);
 
-                    touchOnUI = (!touchOnUI && touch.phase != TouchPhase.Ended);
-
-                    if (touchOnUI && touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
+                    if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
                         return true;
                 }
                 return false;
