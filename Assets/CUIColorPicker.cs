@@ -32,6 +32,7 @@ public class CUIColorPicker : MonoBehaviour
     private Vector2 hueSize;
     private Vector2 saturationValueSize;
     private Touch touch;
+    private Vector3 inputPoint;
 
     private enum InputMethod {Mouse, Touch}
 
@@ -93,6 +94,8 @@ public class CUIColorPicker : MonoBehaviour
 
         saturationValue.GetComponent<Image>().sprite = Sprite.Create(saturationValueTexture, new Rect(0.5f, 0.5f, 1, 1), new Vector2(0.5f, 0.5f));
         saturationValueSize = ((RectTransform)saturationValue.transform).rect.size;
+
+        inputPoint = Vector3.zero;
     }
 
     private void Update()
@@ -192,7 +195,6 @@ public class CUIColorPicker : MonoBehaviour
     private bool GetLocalInput(GameObject go, out Vector2 result)
     {
         RectTransform rt = (RectTransform)go.transform;
-        Vector3 inputPoint = Vector3.zero;
         switch (inputMethod)
         {
             case InputMethod.Mouse:
